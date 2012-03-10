@@ -33,7 +33,7 @@ sAJAXRequest._makeParameters = function (params) {
  * @param {Object|null} postData POST data or null for GET requests.
  * @param {function(string,XMLHttpRequest)} cb Callback.
  * @param {string} [requestType='get'] Request type. 'get' or 'post'.
- * @param {function(XMLHttpRequest)} [errorCb] Error callback.
+ * @param {function(XMLHttpRequest|string)} [errorCb] Error callback.
  * @param {boolean} [isFileUpload=false] If this is is a file upload.
  * @returns {XMLHttpRequest|null} XMLHttpRequest or null if the browser does
  *   not support AJAX.
@@ -85,6 +85,7 @@ sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFil
 
   xhr.open(requestType, url, true);
 
+  var postDataStr;
   if (requestType === 'POST') {
     if (!isFileUpload) {
       xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
@@ -92,17 +93,17 @@ sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFil
     else {
       xhr.setRequestHeader('Content-type', 'multipart/form-data');
     }
-    postData = sAJAXRequest._makeParameters(postData);
+    postDataStr = sAJAXRequest._makeParameters(postData);
     //xhr.setRequestHeader('Content-length', postData.length);
     //xhr.setRequestHeader('Connection', 'close');
   }
   else {
-    postData = null;
+    postDataStr = null;
   }
 
   xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
   /**
-   * @type function
+   * @type function()
    * @private
    */
   xhr.onreadystatechange = function () {
@@ -115,7 +116,7 @@ sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFil
       }
     }
   };
-  xhr.send(postData);
+  xhr.send(postDataStr);
 
   return xhr;
 };
@@ -123,7 +124,7 @@ sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFil
  * Perform an AJAX request to a local URL (same domain) and return the JSON
  *   data as a JavaScript object.
  * @param {string} url URI.
- * @param {function(Object)} cb Callback. Receives an object as the first
+ * @param {function(Object,XMLHttpRequest)} cb Callback. Receives an object as the first
  *   argument.
  * @param {function(string)} [errorCb] Error handler callback.
  * @param {Object} [data] Data to send in object key value format for
@@ -131,7 +132,6 @@ sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFil
  * @returns {XMLHttpRequest} The XMLHttpRequest object.
  */
 sAJAXRequest.getJSON = function (url, cb, errorCb, data) {
-  data === undefined && (data = {});
   /**
    * @private
    * @type function
@@ -140,7 +140,9 @@ sAJAXRequest.getJSON = function (url, cb, errorCb, data) {
     window.console && window.console.log('Caught exception: ' + str);
   });
 
-  url += '?' + sAJAXRequest._makeParameters(data);
+  if (data !== undefined) {
+    url += '?' + sAJAXRequest._makeParameters(data);
+  }
 
   return sAJAXRequest._perform(url, null, function (responseText, xhr) {
     try {
@@ -157,7 +159,7 @@ sAJAXRequest.getJSON = function (url, cb, errorCb, data) {
  * @param {Object} data Object of data.
  * @param {function((Object|string),string)} cb Callback. If the dataType is
  *   JSON, then the first argument will be the JSON data unserialised.
- * @param {function(string,XMLHttpRequest)} [errorCb] Error callback.
+ * @param {function(string,[XMLHttpRequest])} [errorCb] Error callback.
  * @param {string} [dataType] Data type. One of 'text', 'xml', 'json',
  *   'script', 'html'.
  * @param {boolean} [isFileUpload=false] Whether or not this is a file upload.
@@ -168,7 +170,7 @@ sAJAXRequest.post = function (url, data, cb, errorCb, dataType, isFileUpload) {
   dataType = dataType.toLowerCase();
   /**
    * @private
-   * @type function
+   * @type function()
    */
   errorCb === undefined && (errorCb = function (str) {
     window.console && window.console.log('Caught exception: ' + str);
@@ -185,4 +187,22 @@ sAJAXRequest.post = function (url, data, cb, errorCb, dataType, isFileUpload) {
       errorCb(e.message ? e.message : 'Unknown error');
     }
   }, 'POST', errorCb, isFileUpload);
+};
+/**
+ * Fetch a script, then run a callback.
+ * @param {string} url The URI.
+ * @param {function()} cb The callback.
+ */
+sAJAXRequest.getScript = function (url, cb) {
+  var script = document.createElement('script');
+  script.async = true;
+  script.src = url;
+  script.type = 'text/javascript';
+  script.onload = cb;
+  script.onreadystatechange = function () {
+    if (script.readyState === 'loaded' || script.readyState === 'complete') {
+      cb();
+    }
+  };
+  document.body.appendChild(script);
 };
