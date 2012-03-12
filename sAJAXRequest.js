@@ -1,3 +1,4 @@
+/*jshint expr:true */
 /**
  * AJAX functions. Depends on fJSON.
  * @constructor
