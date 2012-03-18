@@ -132,7 +132,7 @@ sAJAXRequest._defaultErrorCb = function (xhrOrString) {
  * Perform an AJAX request to a local URL (same domain) and return the JSON
  *   data as a JavaScript object.
  * @param {string} url URI.
- * @param {function(*,XMLHttpRequest)} cb Callback. Receives the JSON
+ * @param {function(*,XMLHttpRequest)} [cb] Callback. Receives the JSON
  *   decoded JavaScript object as the first argument.
  * @param {function(string)} [errorCb] Error handler callback.
  * @param {Object} [data] Data to send in object key value format for
@@ -142,6 +142,9 @@ sAJAXRequest._defaultErrorCb = function (xhrOrString) {
 sAJAXRequest.getJSON = function (url, cb, errorCb, data) {
   if (errorCb === undefined) {
     errorCb = sAJAXRequest._defaultErrorCb;
+  }
+  if (cb === undefined) {
+    cb = function () {};
   }
 
   if (data !== undefined) {
