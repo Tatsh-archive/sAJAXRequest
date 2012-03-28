@@ -41,11 +41,6 @@ sAJAXRequest._makeParameters = function (params) {
  */
 sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFileUpload) {
   requestType === undefined && (requestType = 'GET');
-  /**
-   * @private
-   * @type function()
-   */
-  errorCb === undefined && (errorCb = function () {});
   isFileUpload === undefined && (isFileUpload = false);
   requestType = requestType.toUpperCase();
   if (requestType === 'POST' && (postData === undefined || postData === null)) {
@@ -113,7 +108,9 @@ sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFil
         cb(xhr.responseText, xhr);
       }
       else {
-        errorCb(xhr.statusText);
+        if (errorCb) {
+          errorCb(xhr.statusText);
+        }
       }
     }
   };
@@ -152,12 +149,7 @@ sAJAXRequest.getJSON = function (url, cb, errorCb, data) {
   }
 
   return sAJAXRequest._perform(url, null, function (responseText, xhr) {
-    try {
-      cb(fJSON.decode(responseText), xhr);
-    }
-    catch (e) {
-      errorCb(e.message ? e.message : 'Unknown error');
-    }
+    cb(fJSON.decode(responseText), xhr);
   }, 'get', errorCb);
 };
 /**
@@ -182,15 +174,10 @@ sAJAXRequest.post = function (url, data, cb, errorCb, dataType, isFileUpload) {
   }
 
   return sAJAXRequest._perform(url, data, function (responseText, xhr) {
-    try {
-      if (dataType === 'json') {
-        responseText = fJSON.decode(responseText);
-      }
-      cb(responseText, xhr);
+    if (dataType === 'json') {
+      responseText = fJSON.decode(responseText);
     }
-    catch (e) {
-      errorCb(e.message ? e.message : 'Unknown error', xhr);
-    }
+    cb(responseText, xhr);
   }, 'POST', errorCb, isFileUpload);
 };
 /**
