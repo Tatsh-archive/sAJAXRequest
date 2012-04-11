@@ -5,6 +5,13 @@
  */
 var sAJAXRequest = function () {};
 /**
+ * Parameters to add to every request.
+ *
+ * @type Object
+ * @private
+ */
+sAJAXRequest._params = {};
+/**
  * If this browser supports XMLHttpRequest natively.
  * @type boolean
  * @private
@@ -145,7 +152,7 @@ sAJAXRequest.getJSON = function (url, cb, errorCb, data) {
   }
 
   if (data !== undefined) {
-    url += '?' + sAJAXRequest._makeParameters(data);
+    url += '?' + sAJAXRequest._makeParameters(data) + '&' + sAJAXRequest._makeParameters(sAJAXRequest._params);
   }
 
   return sAJAXRequest._perform(url, null, function (responseText, xhr) {
@@ -197,4 +204,12 @@ sAJAXRequest.getScript = function (url, cb) {
     }
   };
   document.body.appendChild(script);
+};
+/**
+ * Add a query parameter to be added to every GET request.
+ * @param {string} key The parameter name.
+ * @param {string} value The value of the parameter.
+ */
+sAJAXRequest.addParameter = function (key, value) {
+  sAJAXRequest._params[key] = value;
 };
