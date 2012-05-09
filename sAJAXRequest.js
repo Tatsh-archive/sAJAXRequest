@@ -161,7 +161,7 @@ sAJAXRequest.getJSON = function (url, cb, errorCb, data) {
  * Posts an AJAX request.
  * @param {string} url URI.
  * @param {Object} data Object of data.
- * @param {function((*|string),string)} cb Callback. If the dataType is
+ * @param {function((*|string),XMLHttpRequest)} cb Callback. If the dataType is
  *   JSON, then the first argument will be the JSON data unserialised.
  *   Otherwise, it will be a string.
  * @param {function(string,XMLHttpRequest)} [errorCb] Error callback.
@@ -179,9 +179,12 @@ sAJAXRequest.post = function (url, data, cb, errorCb, dataType, isFileUpload) {
   }
 
   return sAJAXRequest._perform(url, data, function (responseText, xhr) {
+    var data = responseText;
+    
     if (dataType === 'json') {
-      responseText = fJSON.decode(responseText);
+      data = fJSON.decode(responseText);
     }
+    
     cb(responseText, xhr);
   }, 'POST', errorCb, isFileUpload);
 };
