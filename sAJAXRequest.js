@@ -16,9 +16,7 @@ sAJAXRequest._params = {};
  * @type boolean
  * @private
  */
-sAJAXRequest._supportsXHR = (function () {
-  return typeof XMLHttpRequest !== 'undefined';
-})();
+sAJAXRequest._supportsXHR = typeof XMLHttpRequest !== 'undefined';
 /**
  * Makes string of parameters for a request.
  * @private
