@@ -1,4 +1,9 @@
 /*jshint expr:true */
+
+/**
+ * @license sAJAXRequest | http://www.opensource.org/licenses/mit-license.php
+ */
+
 /**
  * AJAX functions. Depends on fJSON.
  * @constructor
