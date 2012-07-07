@@ -41,7 +41,7 @@ sAJAXRequest._makeParameters = function (params) {
  * Perform a request.
  * @private
  * @param {string} url URL including query string.
- * @param {Object|null} postData POST data or null for GET requests.
+ * @param {Object|null|FormData} postData POST data or null for GET requests.
  * @param {function(string,XMLHttpRequest)} cb Callback.
  * @param {string} [requestType='get'] Request type. 'get' or 'post'.
  * @param {function((XMLHttpRequest|string))} [errorCb] Error callback.
@@ -91,17 +91,18 @@ sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFil
 
   xhr.open(requestType, url, true);
 
-  var postDataStr;
+  /** @type {string|FormData} */
+  var postDataStr = '';
+  
   if (requestType === 'POST') {
     if (!isFileUpload) {
       xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+      postDataStr = sAJAXRequest._makeParameters(postData);
     }
     else {
-      xhr.setRequestHeader('Content-type', 'multipart/form-data');
+      // Assume postData is FormData or an object usable with xhr.send()
+      postDataStr = postData;
     }
-    postDataStr = sAJAXRequest._makeParameters(postData);
-    //xhr.setRequestHeader('Content-length', postData.length);
-    //xhr.setRequestHeader('Connection', 'close');
   }
   else {
     postDataStr = null;
@@ -119,7 +120,7 @@ sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFil
       }
       else {
         if (errorCb) {
-          errorCb(xhr.statusText);
+          errorCb(xhr.responseText, xhr.statusText, xhr);
         }
       }
     }
@@ -165,7 +166,7 @@ sAJAXRequest.getJSON = function (url, cb, errorCb, data) {
 /**
  * Posts an AJAX request.
  * @param {string} url URI.
- * @param {Object} data Object of data.
+ * @param {Object|FormData} data Object of data.
  * @param {function((*|string),XMLHttpRequest)} cb Callback. If the dataType is
  *   JSON, then the first argument will be the JSON data unserialised.
  *   Otherwise, it will be a string.
@@ -190,8 +191,14 @@ sAJAXRequest.post = function (url, data, cb, errorCb, dataType, isFileUpload) {
       data = fJSON.decode(responseText);
     }
     
-    cb(responseText, xhr);
-  }, 'POST', errorCb, isFileUpload);
+    cb(data, xhr);
+  }, 'POST', function (responseText, statusText, xhr) {
+    var data = responseText;
+    if (dataType === 'json') {
+      data = fJSON.decode(responseText);
+    }
+    errorCb(data, statusText, xhr);
+  }, isFileUpload);
 };
 /**
  * Fetch a script, then run a callback.
