@@ -42,9 +42,11 @@ sAJAXRequest._makeParameters = function (params) {
  * @private
  * @param {string} url URL including query string.
  * @param {Object|null|FormData} postData POST data or null for GET requests.
- * @param {function(string,XMLHttpRequest)} cb Callback.
+ * @param {function(string,string=,(XMLHttpRequest|null)=):undefined} cb
+ *   Callback.
  * @param {string} [requestType='get'] Request type. 'get' or 'post'.
- * @param {function((XMLHttpRequest|string))} [errorCb] Error callback.
+ * @param {function(string,string=,(XMLHttpRequest|null)=):undefined} [errorCb]
+ *   Error callback.
  * @param {boolean} [isFileUpload=false] If this is is a file upload.
  * @returns {XMLHttpRequest|null} XMLHttpRequest or null if the browser does
  *   not support AJAX.
@@ -91,7 +93,7 @@ sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFil
 
   xhr.open(requestType, url, true);
 
-  /** @type {string|FormData} */
+  /** @type {string|FormData|null} */
   var postDataStr = '';
   
   if (requestType === 'POST') {
@@ -101,7 +103,7 @@ sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFil
     }
     else {
       // Assume postData is FormData or an object usable with xhr.send()
-      postDataStr = postData;
+      postDataStr = /** @type {FormData} */ postData;
     }
   }
   else {
@@ -116,7 +118,7 @@ sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFil
   xhr.onreadystatechange = function () {
     if (xhr.readyState === 4) {
       if (xhr.status === 200) {
-        cb(xhr.responseText, xhr);
+        cb(xhr.responseText, xhr.statusText, xhr);
       }
       else {
         if (errorCb) {
@@ -131,20 +133,22 @@ sAJAXRequest._perform = function (url, postData, cb, requestType, errorCb, isFil
 };
 /**
  * Default error handler.
- * @param {XMLHttpRequest|string} xhrOrString
+ * @param {string|number|Array|Object|null} responseText Response text.
+ * @param {string} [statusText] Status text.
+ * @param {XMLHttpRequest} [xhr] The XMLHttpRequest instance.
  */
-sAJAXRequest._defaultErrorCb = function (xhrOrString) {
-  window.console && window.console.log('Caught exception: ', xhrOrString);
+sAJAXRequest._defaultErrorCb = function (responseText, statusText, xhr) {
+  window.console && window.console.log('Caught exception: ', responseText);
 };
 /**
  * Perform an AJAX request to a local URL (same domain) and return the JSON
  *   data as a JavaScript object.
  * @param {string} url URI.
- * @param {function(*,XMLHttpRequest)} [cb] Callback. Receives the JSON
+ * @param {function(*,string,XMLHttpRequest)} [cb] Callback. Receives the JSON
  *   decoded JavaScript object as the first argument.
  * @param {function(string)} [errorCb] Error handler callback.
- * @param {Object} [data] Data to send in object key value format for
- *   the query string.
+ * @param {Object} [data] Data to send in object key value format for the query
+ *   string.
  * @returns {XMLHttpRequest} The XMLHttpRequest object.
  */
 sAJAXRequest.getJSON = function (url, cb, errorCb, data) {
@@ -159,18 +163,19 @@ sAJAXRequest.getJSON = function (url, cb, errorCb, data) {
     url += '?' + sAJAXRequest._makeParameters(data) + '&' + sAJAXRequest._makeParameters(sAJAXRequest._params);
   }
 
-  return sAJAXRequest._perform(url, null, function (responseText, xhr) {
-    cb(fJSON.decode(responseText), xhr);
+  return sAJAXRequest._perform(url, null, function (responseText, statusText, xhr) {
+    cb(fJSON.decode(responseText), statusText ? statusText : '', xhr ? xhr : null);
   }, 'get', errorCb);
 };
 /**
  * Posts an AJAX request.
  * @param {string} url URI.
  * @param {Object|FormData} data Object of data.
- * @param {function((*|string),XMLHttpRequest)} cb Callback. If the dataType is
- *   JSON, then the first argument will be the JSON data unserialised.
- *   Otherwise, it will be a string.
- * @param {function(string,XMLHttpRequest)} [errorCb] Error callback.
+ * @param {function((string|number|Array|Object|null),string=,(XMLHttpRequest|null)=):undefined}
+ *   cb Callback. If the dataType is JSON, then the first argument will be the
+ *   JSON data unserialised. Otherwise, it will be a string.
+ * @param {function((string|number|Array|Object|null),string=,(XMLHttpRequest|null)=):undefined}
+ *   [errorCb] Error callback.
  * @param {string} [dataType] Data type. One of 'text', 'xml', 'json',
  *   'script', 'html'.
  * @param {boolean} [isFileUpload=false] Whether or not this is a file upload.
@@ -184,18 +189,18 @@ sAJAXRequest.post = function (url, data, cb, errorCb, dataType, isFileUpload) {
     errorCb = sAJAXRequest._defaultErrorCb;
   }
 
-  return sAJAXRequest._perform(url, data, function (responseText, xhr) {
+  return sAJAXRequest._perform(url, data, function (responseText, statusText, xhr) {
     var data = responseText;
     
     if (dataType === 'json') {
-      data = fJSON.decode(responseText);
+      data = /** @type {(string|number|Array|Object|null)} */ fJSON.decode(responseText);
     }
     
-    cb(data, xhr);
+    cb(data, statusText, xhr);
   }, 'POST', function (responseText, statusText, xhr) {
     var data = responseText;
     if (dataType === 'json') {
-      data = fJSON.decode(responseText);
+      data = /** @type {(string|number|Array|Object|null)} */ fJSON.decode(responseText);
     }
     errorCb(data, statusText, xhr);
   }, isFileUpload);
